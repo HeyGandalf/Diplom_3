@@ -16,7 +16,7 @@ class TestResetPassword:
         base_page.open_page(Urls.LOGIN)
         forgot_password_page = ForgotPasswordPage(driver)
         forgot_password_page.click_reset_password_and_check_redirect()
-        assert forgot_password_page.check_element_is_visible(ForgotPasswordPageLocators.RESETTING_PASSWORD_TEXT)
+        assert forgot_password_page.is_element_visible(ForgotPasswordPageLocators.RESETTING_PASSWORD_TEXT)
 
     @allure.title("Ввод почты и клик на кнопку 'Восстановить'")
     @allure.description("Проверка, что ввод почты и переход после клика по кнопке 'Восстановить' показывает кнопку 'Сохранить'")
@@ -25,7 +25,7 @@ class TestResetPassword:
         base_page.open_page(Urls.FORGOT_PASSWORD)
         forgot_password_page = ForgotPasswordPage(driver)
         forgot_password_page.fill_in_email_and_reset(PersonalData.REGISTRATION_EMAIL)
-        assert forgot_password_page.check_element_is_visible(ForgotPasswordPageLocators.SAVE_BUTTON)
+        assert forgot_password_page.is_element_visible(ForgotPasswordPageLocators.SAVE_BUTTON)
 
     @allure.title("Кнопка показать/скрыть активирует поле")
     @allure.description("Проверка, что клик по кнопке показать/скрыть пароль делает поле активным")
@@ -36,3 +36,4 @@ class TestResetPassword:
         forgot_password_page.fill_in_email_and_reset(PersonalData.REGISTRATION_EMAIL)
         forgot_password_page.fill_password_in("1234567")
         forgot_password_page.check_visibility()
+        assert forgot_password_page.is_element_visible(ForgotPasswordPageLocators.PASSWORD_INPUT_ACTIVE)
