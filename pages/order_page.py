@@ -1,0 +1,151 @@
+import re
+import allure
+from locators.locators import AccountPageLocators, MainPageLocators, OrderPageLocators
+from pages.base_page import BasePage
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class OrderPage(BasePage):
+
+    @allure.step("Клик по заказу и проверка, что отображается всплывающее окно")
+    def click_order_and_check_pop_up(self) -> bool:
+        self.wait_for_element(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.find_element_and_click(OrderPageLocators.ORDER_LIST)
+        try:
+            self.check_element_is_visible(OrderPageLocators.STRUCTURE_TEXT)
+            return True
+        except AssertionError:
+            return False
+
+    @allure.step('Проверка, что заказ из истории заказов отображается в Ленте заказов')
+    def check_order_is_on_orders_list(self) -> bool:
+        self.wait_for_element(MainPageLocators.SAUCES_BUTTON)
+        self.scroll_to_element(MainPageLocators.SPICY_SAUCE)
+        self.drag_and_drop(MainPageLocators.SPICY_SAUCE, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.scroll_to_element(MainPageLocators.BUN_INGREDIENT)
+        self.drag_and_drop(MainPageLocators.BUN_INGREDIENT, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.find_element_and_click(MainPageLocators.ORDER_BUTTON)
+
+        initial_text = self.get_element_text_js(MainPageLocators.ORDER_POP_UP)
+        self.wait_for_text_change(MainPageLocators.ORDER_POP_UP, initial_text)
+        order_number = self.get_element_text_js(MainPageLocators.ORDER_POP_UP)
+        match = re.search(r'(\d+)', order_number)
+        if not match:
+            return False
+        order_number_id = match.group(0)
+
+        self.find_element_and_click(MainPageLocators.CLOSE_POP_UP_ORDER)
+
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable(MainPageLocators.ACCOUNT_BUTTON)
+        )
+        self.find_element_and_click(MainPageLocators.ACCOUNT_BUTTON)
+        self.find_element_and_click(AccountPageLocators.HISTORY_BUTTON)
+        self.wait_for_element(AccountPageLocators.FIRST_ORDER)
+        self.scroll_to_element(AccountPageLocators.LAST_ORDER)
+
+        order_in_acc_pop_up = self.get_element_text_js(MainPageLocators.ORDER_POP_UP)
+        match = re.match(r'(\d+)', order_in_acc_pop_up)
+        if not match:
+            return False
+        order_id = match.group(1).lstrip('0')
+
+        self.scroll_to_element(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+
+        order_locator = self.get_order_number_locator(order_id)
+        try:
+            self.check_element_is_visible(order_locator)
+        except AssertionError:
+            return False
+
+        return order_number_id == order_id
+
+    @allure.step('Проверка, что счетчик заказов за все время увеличивается')
+    def check_all_completed_orders_counter(self) -> bool:
+        self.wait_for_element(MainPageLocators.SAUCES_BUTTON)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.wait_for_element(OrderPageLocators.ALL_ORDERS_COUNTER)
+        all_completed_orders = self.find_element(OrderPageLocators.ALL_ORDERS_COUNTER)
+        all_completed_orders_counter = all_completed_orders.text
+
+        self.find_element_and_click(MainPageLocators.CONSTRUCTOR_BUTTON)
+        self.scroll_to_element(MainPageLocators.SPICY_SAUCE)
+        self.drag_and_drop(MainPageLocators.SPICY_SAUCE, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.scroll_to_element(MainPageLocators.BUN_INGREDIENT)
+        self.drag_and_drop(MainPageLocators.BUN_INGREDIENT, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.find_element_and_click(MainPageLocators.ORDER_BUTTON)
+
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(MainPageLocators.CLOSE_POP_UP_ORDER)
+        )
+        self.wait_for_element(MainPageLocators.CLOSE_POP_UP_ORDER)
+        self.find_element_and_click(MainPageLocators.CLOSE_POP_UP_ORDER)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(OrderPageLocators.ALL_ORDERS_COUNTER)
+        )
+        self.wait_for_element(OrderPageLocators.ALL_ORDERS_COUNTER)
+        all_completed_orders_after_place_order = self.find_element(OrderPageLocators.ALL_ORDERS_COUNTER)
+        all_completed_orders_after_place_order_counter = all_completed_orders_after_place_order.text
+
+        return all_completed_orders_counter < all_completed_orders_after_place_order_counter
+
+    @allure.step('Проверка, что счетчик заказов за сегодня увеличивается')
+    def check_daily_orders_counter(self) -> bool:
+        self.wait_for_element(MainPageLocators.SAUCES_BUTTON)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.wait_for_element(OrderPageLocators.TODAY_ORDERS_COUNTER)
+        today_orders = self.find_element(OrderPageLocators.TODAY_ORDERS_COUNTER)
+        today_orders_counter = today_orders.text
+
+        self.find_element_and_click(MainPageLocators.CONSTRUCTOR_BUTTON)
+        self.scroll_to_element(MainPageLocators.SPICY_SAUCE)
+        self.drag_and_drop(MainPageLocators.SPICY_SAUCE, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.scroll_to_element(MainPageLocators.BUN_INGREDIENT)
+        self.drag_and_drop(MainPageLocators.BUN_INGREDIENT, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.find_element_and_click(MainPageLocators.ORDER_BUTTON)
+
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(MainPageLocators.CLOSE_POP_UP_ORDER)
+        )
+        self.wait_for_element(MainPageLocators.CLOSE_POP_UP_ORDER)
+        self.find_element_and_click(MainPageLocators.CLOSE_POP_UP_ORDER)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.wait_for_element(OrderPageLocators.ALL_ORDERS_COUNTER)
+
+        today_order_after_place_order = self.find_element(OrderPageLocators.TODAY_ORDERS_COUNTER)
+        today_order_after_place_order_counter = today_order_after_place_order.text
+
+        return today_orders_counter < today_order_after_place_order_counter
+
+    @allure.step('Проверка, что заказ появляется в разделе В работе')
+    def check_new_order_appeears_in_work_list(self) -> bool:
+        self.wait_for_element(MainPageLocators.SAUCES_BUTTON)
+        self.scroll_to_element(MainPageLocators.SPICY_SAUCE)
+        self.drag_and_drop(MainPageLocators.SPICY_SAUCE, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.scroll_to_element(MainPageLocators.BUN_INGREDIENT)
+        self.drag_and_drop(MainPageLocators.BUN_INGREDIENT, MainPageLocators.CONSTRUCTOR_FIELD)
+        self.find_element_and_click(MainPageLocators.ORDER_BUTTON)
+
+        initial_text = self.get_element_text_js(MainPageLocators.ORDER_POP_UP)
+        self.wait_for_text_change(MainPageLocators.ORDER_POP_UP, initial_text)
+        order_number = self.get_element_text_js(MainPageLocators.ORDER_POP_UP)
+        match = re.search(r'(\d+)', order_number)
+        if not match:
+            return False
+        order_number_id = match.group(0)
+
+        self.find_element_and_click(MainPageLocators.CLOSE_POP_UP_ORDER)
+        self.wait_for_element(MainPageLocators.ORDERS_FEED_BUTTON)
+        self.find_element_and_click(MainPageLocators.ORDERS_FEED_BUTTON)
+
+        order_locator = self.get_order_in_progress_locator(order_number_id)
+        try:
+            self.check_element_is_visible(order_locator)
+            return True
+        except AssertionError:
+            return False
